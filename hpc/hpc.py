@@ -1,3 +1,9 @@
+import os
+import stat
+
+import paramiko
+
+
 class Hpc:
     def __init__(self, name):
         self.name = name
