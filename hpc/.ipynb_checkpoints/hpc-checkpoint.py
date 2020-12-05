@@ -7,7 +7,7 @@ import paramiko
 class Hpc:
     def __init__(self, name):
         self.name = name
-        if self.name == "probe":
+        if self.name == "probe": # 探索100
             self.pkey = paramiko.RSAKey.from_private_key_file(
                 r"C:\Users\shen\Desktop\杂物\探索100\KEY\caobynew",
                 password="molecularsimulation",
@@ -16,7 +16,7 @@ class Hpc:
             self.username = "caoby"
             self.trans = paramiko.Transport((self.ip, 22))
 
-        elif self.name == "kamui":
+        elif self.name == "sunway": # 神威-太湖之光
             self.ip = "41.0.0.188"
             self.username = "caoby"
             self.passwd = "axyr5Lr6"
@@ -25,7 +25,7 @@ class Hpc:
     def __enter__(self):
         if self.name == "probe":
             self.trans.connect(username=self.username, pkey=self.pkey)
-        elif self.name == "kamui":
+        elif self.name == "sunway":
             self.trans.connect(username=self.username, password=self.passwd)
         self.sftp = paramiko.SFTPClient.from_transport(self.trans)
         self.ssh = paramiko.SSHClient()
