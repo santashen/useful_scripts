@@ -5,9 +5,28 @@ import paramiko
 
 
 class Hpc:
+    """Interact with supercomputers.
+    
+    Attributes:
+        name: Name of supercomputers.
+                probe: 清华-探索100
+                sunway: 神威-太湖之光  
+    ---------
+    Examples:
+    with Hpc(name="sunway") as sunway:
+        print(sunway.run_shell("ls"))
+        sunway.upload(localpath='123.txt',remotepath='123.txt')
+        sunway.upload(localpath='some_folder',remotepath='another_folder')
+    """
+    
     def __init__(self, name):
+        """Inits Hpc with name.
+        
+        Choose different connection ways for different supercomputers.
+        """
+        
         self.name = name
-        if self.name == "probe": # 探索100
+        if self.name == "probe":
             self.pkey = paramiko.RSAKey.from_private_key_file(
                 r"C:\Users\shen\Desktop\杂物\探索100\KEY\caobynew",
                 password="molecularsimulation",
@@ -16,13 +35,14 @@ class Hpc:
             self.username = "caoby"
             self.trans = paramiko.Transport((self.ip, 22))
 
-        elif self.name == "sunway": # 神威-太湖之光
+        elif self.name == "sunway":
             self.ip = "41.0.0.188"
             self.username = "caoby"
             self.passwd = "axyr5Lr6"
             self.trans = paramiko.Transport((self.ip, 22))
 
     def __enter__(self):
+        """Build the connection passage."""        
         if self.name == "probe":
             self.trans.connect(username=self.username, pkey=self.pkey)
         elif self.name == "sunway":
@@ -33,8 +53,11 @@ class Hpc:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        """Close the connection passage."""
         self.trans.close()
 
+        
+        
     def __get_all_files(self, directory, remote=True):  # revise from CSDN:littleRpl
         all_files = []
         if remote == True:
@@ -55,6 +78,12 @@ class Hpc:
             return all_files
 
     def upload(self, localpath, remotepath):
+        """Upload local files to remote servers.
+        
+        Args:
+            localpath: local file or local folder
+            remotepath: remote file or remote folder
+        """
         if os.path.isfile(localpath):
             self.sftp.put(localpath, remotepath)
         else:
@@ -73,6 +102,12 @@ class Hpc:
                 self.sftp.put(file, remote_filename)
 
     def download(self, localpath, remotepath):
+        """Download files in remote server to local path.
+        
+        Args:
+            localpath: local file or local folder
+            remotepath: remote file or remote folder
+        """
         if stat.S_ISREG(self.sftp.lstat(remotepath).st_mode):
             self.sftp.get(remotepath, localpath)
         else:
@@ -86,6 +121,15 @@ class Hpc:
                 self.sftp.get(file, local_filename)
 
     def run_shell(self, command):
+        """Run shell command.
+        
+        Args:
+            command: shell command, for multi commands, use semicolon to seperate.
+        ------------
+        Examples:
+            with Hpc(name="sunway") as sunway:
+                print(sunway.run_shell("cd some_folder; ls"))
+        """        
         command = "bash -lc '{}'".format(command)
         stdin, stdout, stderr = self.ssh.exec_command(command, get_pty=True)
         out = stdout.read().decode()
