@@ -14,10 +14,10 @@ class Hpc:
                 sunway: 神威-太湖之光  
     ---------
     Examples:
-    with Hpc(name="sunway") as sunway:
-        print(sunway.run_shell("ls"))
-        sunway.upload(localpath='123.txt',remotepath='123.txt')
-        sunway.upload(localpath='some_folder',remotepath='another_folder')
+        with Hpc(name="sunway") as sunway:
+            print(sunway.run_shell("ls"))
+            sunway.upload(localpath='123.txt',remotepath='123.txt')
+            sunway.upload(localpath='some_folder',remotepath='another_folder')
     """
     
     def __init__(self, name):
@@ -100,7 +100,7 @@ class Hpc:
                     self.run_shell("mkdir -p {}".format(remote_path))  # 使用这个远程执行命令
 
                 self.sftp.put(file, remote_filename)
-                print('upload {} successfully'.format(remote_filename))
+                print('successfully upload {}'.format(remote_filename))
 
     def download(self, localpath, remotepath):
         """Download files in remote server to local path.
@@ -111,6 +111,7 @@ class Hpc:
         """
         if stat.S_ISREG(self.sftp.lstat(remotepath).st_mode):
             self.sftp.get(remotepath, localpath)
+            print('successfully download {}'.format(localpath))
         else:
             all_files = self.__get_all_files(remotepath, remote=True)
             for file in all_files:
@@ -120,7 +121,7 @@ class Hpc:
                 if not os.path.exists(local_path):
                     os.makedirs(local_path)
                 self.sftp.get(file, local_filename)
-                print('download {} successfully'.format(local_filename))
+                print('successfully download {}'.format(local_filename))
                 
     def run_shell(self, command):
         """Run shell command.

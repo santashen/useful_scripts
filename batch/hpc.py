@@ -111,6 +111,7 @@ class Hpc:
         """
         if stat.S_ISREG(self.sftp.lstat(remotepath).st_mode):
             self.sftp.get(remotepath, localpath)
+            print('successfully download {}'.format(localpath))
         else:
             all_files = self.__get_all_files(remotepath, remote=True)
             for file in all_files:
