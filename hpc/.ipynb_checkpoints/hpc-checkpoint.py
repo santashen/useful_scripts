@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import stat
 
@@ -91,7 +92,6 @@ class Hpc:
             for file in all_files:
 
                 remote_filename = file.replace(localpath, remotepath).replace("\\", "/")
-                print(remote_filename)
                 remote_path = os.path.dirname(remote_filename)
 
                 try:
@@ -100,6 +100,7 @@ class Hpc:
                     self.run_shell("mkdir -p {}".format(remote_path))  # 使用这个远程执行命令
 
                 self.sftp.put(file, remote_filename)
+                print('upload {} successfully'.format(remote_filename))
 
     def download(self, localpath, remotepath):
         """Download files in remote server to local path.
@@ -119,7 +120,8 @@ class Hpc:
                 if not os.path.exists(local_path):
                     os.makedirs(local_path)
                 self.sftp.get(file, local_filename)
-
+                print('download {} successfully'.format(local_filename))
+                
     def run_shell(self, command):
         """Run shell command.
         
