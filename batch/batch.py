@@ -93,16 +93,23 @@ class Batch(Hpc):
             os.path.join(folder, self.in_file), "w"
         ) as new_input_file:
             content = template_input_file.readlines()
-            content[16] = re.sub("[0-9]+", str(temperature), content[16])
-            content[17] = re.sub("[0-9]+", str(pressure), content[17])
+            content[16] = re.sub("[0-9]+", str(temperature), content[17])
+            content[17] = re.sub("[0-9]+", str(pressure), content[18])
             for line in content:
                 new_input_file.write(line)
 
-    def bsub_work(self, server_sub_folder, node, processor):
+    def bsub_work(self, server_sub_folder, node, processor, new=True):
         """提交server_sub_folder中的in文件"""
-        self.run_shell(
-            "cd {}; bsub -q q_x86_share -N {} -np {} -o out.log -i {} \
-            /GFPS8p/caoby/software/lammps/lammps-stable_12Dec2018/src/lmp_mpi -sf opt".format(
-                server_sub_folder, node, processor, self.in_file
+        if new == True:
+            self.run_shell(
+                "cd {}; bsub -q q_x86_share -N {} -np {} -o out.log -i {} \
+                /GFPS8p/caoby/software/lammps/lammps-stable_12Dec2018/src/lmp_mpi -sf opt".format(
+                    server_sub_folder, node, processor, self.in_file
+                )
             )
-        )
+        else:
+            self.run_shell(
+                "cd {}; bsub -q q_x86_expr -N {} -np {} -o out.log -i {} lmp".format(
+                    server_sub_folder, node, processor, self.in_file
+                )
+            )
