@@ -1,5 +1,22 @@
 # -*- coding: utf-8 -*-
+# ---
+# jupyter:
+#   jupytext:
+#     formats: ipynb,py:light
+#     text_representation:
+#       extension: .py
+#       format_name: light
+#       format_version: '1.5'
+#       jupytext_version: 1.6.0
+#   kernelspec:
+#     display_name: lab
+#     language: python
+#     name: lab
+# ---
+
+# +
 import os
+import re
 import stat
 
 import paramiko
@@ -19,13 +36,13 @@ class Hpc:
             sunway.upload(localpath='123.txt',remotepath='123.txt')
             sunway.upload(localpath='some_folder',remotepath='another_folder')
     """
-    
+
     def __init__(self, name):
         """Inits Hpc with name.
         
         Choose different connection ways for different supercomputers.
         """
-        
+
         self.name = name
         if self.name == "probe":
             self.pkey = paramiko.RSAKey.from_private_key_file(
@@ -43,7 +60,7 @@ class Hpc:
             self.trans = paramiko.Transport((self.ip, 22))
 
     def __enter__(self):
-        """Build the connection passage."""        
+        """Build the connection passage."""
         if self.name == "probe":
             self.trans.connect(username=self.username, pkey=self.pkey)
         elif self.name == "sunway":
@@ -57,8 +74,6 @@ class Hpc:
         """Close the connection passage."""
         self.trans.close()
 
-        
-        
     def __get_all_files(self, directory, remote=True):  # revise from CSDN:littleRpl
         all_files = []
         if remote == True:
@@ -86,7 +101,13 @@ class Hpc:
             remotepath: remote file or remote folder
         """
         if os.path.isfile(localpath):
+            try:
+                sftp.stat(remotepath)
+            except:
+                self.run_shell("mkdir -p {}".format(os.path.dirname(remotepath)))
+
             self.sftp.put(localpath, remotepath)
+            print("successfully upload {} ^w^".format(localpath))
         else:
             all_files = self.__get_all_files(localpath, remote=False)
             for file in all_files:
@@ -100,7 +121,7 @@ class Hpc:
                     self.run_shell("mkdir -p {}".format(remote_path))  # 使用这个远程执行命令
 
                 self.sftp.put(file, remote_filename)
-                print('successfully upload {}'.format(remote_filename))
+                print("successfully upload {} ^w^".format(file))
 
     def download(self, localpath, remotepath):
         """Download files in remote server to local path.
@@ -111,7 +132,7 @@ class Hpc:
         """
         if stat.S_ISREG(self.sftp.lstat(remotepath).st_mode):
             self.sftp.get(remotepath, localpath)
-            print('successfully download {}'.format(localpath))
+            print("successfully download {}".format(remotepath))
         else:
             all_files = self.__get_all_files(remotepath, remote=True)
             for file in all_files:
@@ -121,9 +142,9 @@ class Hpc:
                 if not os.path.exists(local_path):
                     os.makedirs(local_path)
                 self.sftp.get(file, local_filename)
-                print('successfully download {}'.format(local_filename))
-                
-    def run_shell(self, command):
+                print("successfully download {} ^w^".format(file))
+
+    def run_shell(self, command, stream_out=False, line_nums=5):
         """Run shell command.
         
         Args:
@@ -132,9 +153,54 @@ class Hpc:
         Examples:
             with Hpc(name="sunway") as sunway:
                 print(sunway.run_shell("cd some_folder; ls"))
-        """        
+        """
         command = "bash -lc '{}'".format(command)
         stdin, stdout, stderr = self.ssh.exec_command(command, get_pty=True)
-        out = stdout.read().decode()
-        error = stderr.read().decode()
-        return out
+        if stream_out == False:
+            out = stdout.read().decode()
+            error = stderr.read().decode()
+            return out
+        else:
+            for i, line in enumerate(iter(lambda: stdout.readline(2048), "")):
+                print(line, end="")
+                if i >= line_nums:
+                    break
+
+    def bjobs(self, job_name):
+        """Return the queue numbers of job_name"""
+        job_information = self.run_shell("bjobs")
+        job_numbers = [
+            re.findall("[0-9]+", line)[0]
+            for line in job_information.split("\n")
+            if re.findall(job_name, line)
+        ]
+        return job_numbers
+
+    def bpeek(self, job_number, line_nums=5):
+        """bpeek -f job_number"""
+        self.run_shell(
+            "bpeek -f {}".format(job_number), stream_out=True, line_nums=line_nums
+        )
+
+    def bkill(self, job_name):
+        """Kill job by job_name"""
+        job_numbers = self.bjobs_work(job_name)
+        for job_number in job_numbers:
+            message = self.run_shell("bkill {}".format(job_number))
+            print(message)
+
+    def bsub(self, directory, file, node=3, processor=24, software="lammps"):
+        """bsub specified file"""
+        if software == "lammps":
+            message = self.run_shell(
+                "cd {};bsub -q q_x86_share -N {} -np {} -o out.log -i {}\
+               /GFPS8p/caoby/shen/lammps/src/lmp_Mr_shen -sf opt".format(
+                    directory, node, processor, file
+                )
+            )
+        print(
+            message,
+            "submitted file is :   " + os.path.join(directory, file).replace("\\", "/"),
+            "----^w^------",
+            sep="\n",
+        )
