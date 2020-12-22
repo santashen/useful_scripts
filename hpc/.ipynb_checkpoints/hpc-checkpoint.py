@@ -143,6 +143,13 @@ class Hpc:
                     os.makedirs(local_path)
                 self.sftp.get(file, local_filename)
                 print("successfully download {} ^w^".format(file))
+                
+    def delete(self,remotefile):
+        self.run_shell('rm {}'.format(remotefile))
+        try:
+            sftp.stat(remotefile)
+        except:
+            print("successfully delete {} ^w^".format(remotefile))
 
     def run_shell(self, command, stream_out=False, line_nums=5):
         """Run shell command.
@@ -166,15 +173,18 @@ class Hpc:
                 if i >= line_nums:
                     break
 
-    def bjobs(self, job_name):
+    def bjobs(self, job_name = None):
         """Return the queue numbers of job_name"""
-        job_information = self.run_shell("bjobs")
-        job_numbers = [
-            re.findall("[0-9]+", line)[0]
-            for line in job_information.split("\n")
-            if re.findall(job_name, line)
-        ]
-        return job_numbers
+        if job_name is None:
+            return self.run_shell("bjobs")
+        else:
+            job_information = self.run_shell("bjobs")
+            job_numbers = [
+                re.findall("[0-9]+", line)[0]
+                for line in job_information.split("\n")
+                if re.findall(job_name, line)
+            ]
+            return job_numbers
 
     def bpeek(self, job_number, line_nums=5):
         """bpeek -f job_number"""
@@ -182,12 +192,17 @@ class Hpc:
             "bpeek -f {}".format(job_number), stream_out=True, line_nums=line_nums
         )
 
-    def bkill(self, job_name):
+    def bkill(self, job):
         """Kill job by job_name"""
-        job_numbers = self.bjobs_work(job_name)
-        for job_number in job_numbers:
-            message = self.run_shell("bkill {}".format(job_number))
+        try:
+            int(job)
+            message = self.run_shell("bkill {}".format(job))
             print(message)
+        except:
+            job_numbers = self.bjobs(job)
+            for job_number in job_numbers:
+                message = self.run_shell("bkill {}".format(job_number))
+                print(message)
 
     def bsub(self, directory, file, node=3, processor=24, software="lammps"):
         """bsub specified file"""
@@ -204,3 +219,8 @@ class Hpc:
             "----^w^------",
             sep="\n",
         )
+        
+    def qload(self):
+        """show current works"""
+        message = self.run_shell("qload -w")
+        return message
